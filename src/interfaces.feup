@@ -1,0 +1,16 @@
+# Configure Loopback                                                           
+auto lo                                                                        
+iface lo inet loopback                                                         
+                                                                               
+auto eth0                                                                      
+#iface eth0 inet dhcp                                                          
+iface eth0 inet static                                                         
+        address 192.168.103.180                                                      
+        netmask 255.255.255.0                                                  
+        gateway 192.168.103.254                                                
+        dns-nameservers 193.136.28.10 193.136.90.9 208.67.222.222 208.67.220.200                  
+                                                                               
+auto usb0                                                                      
+iface usb0 inet static                                                         
+        address 192.168.93.1                                                   
+        netmask 255.255.255.0
