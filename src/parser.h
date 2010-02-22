@@ -31,7 +31,7 @@
 #define FILE_NAME_LEN	512
 
 #define FILE_NAME		"core51.hex"
-int command_parser(char *command);
+int command_parser(char *string, int *socket);
 
 
 #endif //__PARSER_H

@@ -9,8 +9,6 @@
 #include <sys/stat.h>
 #include "uart.h"
 #include "gpio.h"
-#include "connection.h"
-#include "sec_connection.h"
 #include "parser.h"
 
 #define RST         0x01
