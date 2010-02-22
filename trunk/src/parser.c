@@ -11,16 +11,15 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include "connection.h"
 #include "parser.h"
 #include "core51.h"
 
-int send_ack(void) {
-	return connection_write(CMD_ACKNOWLEDGE, strlen(CMD_ACKNOWLEDGE));
+int send_ack(int *socket) {
+    return write(*socket, CMD_ACKNOWLEDGE, strlen(CMD_ACKNOWLEDGE));
 }
 
-int send_nack(void) {
-	return connection_write(CMD_NOT_ACKNOWLEDGE, strlen(CMD_NOT_ACKNOWLEDGE));
+int send_nack(int *socket) {
+	return write(*socket, CMD_NOT_ACKNOWLEDGE, strlen(CMD_NOT_ACKNOWLEDGE));
 }
 
 int command_test(char *string, char *command) {
@@ -30,7 +29,7 @@ int command_test(char *string, char *command) {
     return (strncmp(string, command, strlen(command)) == 0) ? 1 : 0;
 }
 
-int command_parser(char *string) 
+int command_parser(char *string, int *socket) 
 {
 	FILE *fp;
 	char filename[FILE_NAME_LEN+1];
@@ -42,7 +41,7 @@ int command_parser(char *string)
 	 * Close the connection!
 	 */
     if(command_test(string, CMD_EXIT)) {
-		if((n=send_ack()) < 0) return n;
+		if((n=send_ack(socket)) < 0) return n;
 		sleep(1);
         return 1;
     }
@@ -63,10 +62,10 @@ int command_parser(char *string)
 		if(fp == NULL)
 			return -1;
 		
-		if((n=send_ack()) < 0) return n;
+		if((n=send_ack(socket)) < 0) return n;
 			
 		while(1) {
-			n = connection_read(buff, TEXT_BUF_LEN);
+			n = read(*socket, buff, TEXT_BUF_LEN);
 			if(n < 0)
 				return n;
 			
@@ -80,18 +79,18 @@ int command_parser(char *string)
 				
 			fputc('\n', fp);
 			
-			if((n=send_ack()) < 0) return n;
+			if((n=send_ack(socket)) < 0) return n;
 		}
 		
 		fclose(fp);
-		if((n=send_ack()) < 0) return n;
+		if((n=send_ack(socket)) < 0) return n;
 	}
 	/*
 	 * Command ping:
 	 * Just for testing... answer with a "PONG".
 	 */
     else if(command_test(string, CMD_PING)) {
-        n = connection_write(CMD_PONG, strlen(CMD_PONG));
+        n = write(*socket, CMD_PONG, strlen(CMD_PONG));
         if (n < 0)
 			return n;
     }
@@ -107,7 +106,7 @@ int command_parser(char *string)
 		strncpy(filename+strlen(P_tmpdir)+1, FILE_NAME, strlen(FILE_NAME));
 		
         core51_sendhex(filename);
-        if((n=send_ack()) < 0) return n;
+        if((n=send_ack(socket)) < 0) return n;
     }
     /*
      * Command set key:
@@ -116,14 +115,14 @@ int command_parser(char *string)
     else if(command_test(string, CMD_SET_KEY)) {
         if(strlen(string) > strlen(CMD_SET_KEY)) {
             if(srkey(1,string[strlen(CMD_SET_KEY)]) < 0) {
-                if((n=send_nack()) < 0) return n;
+                if((n=send_nack(socket)) < 0) return n;
             }
             else {
-                if((n=send_ack()) < 0) return n;
+                if((n=send_ack(socket)) < 0) return n;
             }
         }
         else {
-            if((n=send_nack()) < 0) return n;
+            if((n=send_nack(socket)) < 0) return n;
         }
     }
     /*
@@ -133,14 +132,14 @@ int command_parser(char *string)
     else if(command_test(string, CMD_CLEAR_KEY)) {
         if(strlen(string) > strlen(CMD_SET_KEY)) {
             if(srkey(0,string[strlen(CMD_SET_KEY)]) < 0) {
-                if((n=send_nack()) < 0) return n;
+                if((n=send_nack(socket)) < 0) return n;
             }
             else {  
-                if((n=send_ack()) < 0) return n;
+                if((n=send_ack(socket)) < 0) return n;
             }
         }
         else {
-            if((n=send_nack()) < 0) return n;
+            if((n=send_nack(socket)) < 0) return n;
         }
     }
     /*
@@ -149,7 +148,7 @@ int command_parser(char *string)
      */
     else if(command_test(string, CMD_SET_RESET)) {
         srreset(1);
-        if((n=send_ack()) < 0) return n;
+        if((n=send_ack(socket)) < 0) return n;
     }
     /*
      * Command clear reset:
@@ -157,7 +156,7 @@ int command_parser(char *string)
      */
     else if(command_test(string, CMD_CLEAR_RESET)) {
         srreset(0);
-        if((n=send_ack()) < 0) return n;
+        if((n=send_ack(socket)) < 0) return n;
     }
     /*
      * Command set interrupt:
@@ -165,7 +164,7 @@ int command_parser(char *string)
      */
     else if(command_test(string, CMD_SET_INTERRUPT)) {
         srint(1);
-        if((n=send_ack()) < 0) return n;
+        if((n=send_ack(socket)) < 0) return n;
     }
     /*
      * Command clear interrupt:
@@ -173,7 +172,7 @@ int command_parser(char *string)
      */
     else if(command_test(string, CMD_CLEAR_INTERRUPT)) {
         srint(0);
-        if((n=send_ack()) < 0) return n;
+        if((n=send_ack(socket)) < 0) return n;
     }
     /*
      * Command run:
@@ -181,7 +180,7 @@ int command_parser(char *string)
      */ 
     else if(command_test(string, CMD_RUN_HEX)) {
         core51_run();
-        if((n=send_ack()) < 0) return n;
+        if((n=send_ack(socket)) < 0) return n;
     }
     /*
      * Command abort:
@@ -189,10 +188,10 @@ int command_parser(char *string)
      */ 
     else if(command_test(string, CMD_ABORT_HEX)) {
         core51_abort();
-        if((n=send_ack()) < 0) return n;
+        if((n=send_ack(socket)) < 0) return n;
     }    
 	else {
-		if((n=send_nack()) < 0) return n;
+		if((n=send_nack(socket)) < 0) return n;
 	}
 
 	return 0;
