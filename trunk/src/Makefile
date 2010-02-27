@@ -1,12 +1,12 @@
-# Make file
+# Makefile
 #
-# $Id: Makefile 4 2010-01-10 22:10:13Z adias $
+# $Id$
 
 CC := avr32-linux-gcc
 CFLAGS := -pipe -O2 -g -Wall -pthread -fno-strict-aliasing -D_REENTRANT
 
-DEPS = core51.h gpio.h uart.h parser.h
-OBJ = main.o core51.o gpio.o uart.o parser.o
+DEPS = core51.h gpio.h uart.h parser.h timestamp.h
+OBJ = main.o core51.o gpio.o uart.o parser.o timestamp.o
 
 %.o: %.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)

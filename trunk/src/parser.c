@@ -1,18 +1,27 @@
-/*   This file is prepared for Doxygen automatic documentation generation   */
-/*! \file ********************************************************************
+/*   This file is prepared for Doxygen automatic documentation generation     */
+/*! \file **********************************************************************
  *
  * \brief
  *      Command parser
  * 
- * $Id: parser.c 4 2010-01-10 22:10:13Z adias $
+ * \author
+ *      Américo Dias <americo.dias@fe.up.pt>
  *
- ****************************************************************************/
+ * $Revision$
+ * $HeadURL$
+ * $Date$
+ * $Author$
+ * $Id$
+ *
+ ******************************************************************************/
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+
 #include "parser.h"
 #include "core51.h"
+#include "defs.h"
 
 int send_ack(int *socket) {
     return write(*socket, CMD_ACKNOWLEDGE, strlen(CMD_ACKNOWLEDGE));
@@ -31,9 +40,9 @@ int command_test(char *string, char *command) {
 
 int command_parser(char *string, int *socket) 
 {
+    static int program_status = 0;
+    
 	FILE *fp;
-	char filename[FILE_NAME_LEN+1];
-	char buff[TEXT_BUF_LEN+1];
 	int n;
 	
 	/*
@@ -51,38 +60,27 @@ int command_parser(char *string, int *socket)
      * to the FILE_NAME in the system temporary directory.
      * If the file already exist, it is rewritten.
      */
-	else if(command_test(string, CMD_PROGRAM)) {		
-		bzero(filename,FILE_NAME_LEN+1);
-		strncpy(filename, P_tmpdir, strlen(P_tmpdir));
-		strncpy(filename+strlen(P_tmpdir), "/", 1);
-		strncpy(filename+strlen(P_tmpdir)+1, FILE_NAME, strlen(FILE_NAME));
-
-		fp = fopen(filename, "w");
+	else if(command_test(string, CMD_PROGRAM)) {
+		fp = fopen(HEX_FILE_NAME, "w");
 		
 		if(fp == NULL)
 			return -1;
 		
-		if((n=send_ack(socket)) < 0) return n;
-			
-		while(1) {
-			n = read(*socket, buff, TEXT_BUF_LEN);
-			if(n < 0)
-				return n;
-			
-			if(command_test(buff, CMD_END_PROGRAM)) {
-				break;
-			}
-			
-			n = fwrite(buff, sizeof(char), strlen(buff), fp);
-			if(n < 0)
-				return n;
-				
-			fputc('\n', fp);
-			
-			if((n=send_ack(socket)) < 0) return n;
-		}
-		
 		fclose(fp);
+		
+		program_status = 1;
+		
+		if((n=send_ack(socket)) < 0) return n;
+	}
+    /*
+     * Command end program:
+     * Receive the hexadecimal file from the TCP/IP connection and sent it
+     * to the FILE_NAME in the system temporary directory.
+     * If the file already exist, it is rewritten.
+     */
+	else if(command_test(string, CMD_END_PROGRAM)) {				
+		program_status = 0;
+		
 		if((n=send_ack(socket)) < 0) return n;
 	}
 	/*
@@ -100,12 +98,8 @@ int command_parser(char *string, int *socket)
      * port.
      */
     else if(command_test(string, CMD_PROGRAM_HEX)) {
-    	bzero(filename,FILE_NAME_LEN+1);
-		strncpy(filename, P_tmpdir, strlen(P_tmpdir));
-		strncpy(filename+strlen(P_tmpdir), "/", 1);
-		strncpy(filename+strlen(P_tmpdir)+1, FILE_NAME, strlen(FILE_NAME));
 		
-        core51_sendhex(filename);
+        core51_sendhex(HEX_FILE_NAME);
         if((n=send_ack(socket)) < 0) return n;
     }
     /*
@@ -189,7 +183,33 @@ int command_parser(char *string, int *socket)
     else if(command_test(string, CMD_ABORT_HEX)) {
         core51_abort();
         if((n=send_ack(socket)) < 0) return n;
-    }    
+    }
+    /*
+     * Program mode:
+     * If the program mode is active, send the data to the program file
+     */ 
+    else if(program_status == 1) {
+		
+		fp = fopen(HEX_FILE_NAME, "a");
+		
+		if(fp == NULL)
+			return -1;
+			
+		n = fwrite(string, sizeof(char), strlen(string), fp);
+		fputc('\n', fp);
+		
+		fclose(fp);
+		
+		if(n < 0)
+			return n;
+			
+		if((n=send_ack(socket)) < 0) return n;
+			
+    }
+    /*
+     * Else:
+     * Command or data not understood. Send a NOT ACKOWLEDGE.
+     */ 
 	else {
 		if((n=send_nack(socket)) < 0) return n;
 	}
