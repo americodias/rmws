@@ -16,7 +16,6 @@
 #ifndef __UART_H
 #define __UART_H
 
-
 /* 
  * with this struct the basic configuration of the serial line can be performed.
  *
