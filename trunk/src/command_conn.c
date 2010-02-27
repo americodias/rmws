@@ -86,9 +86,10 @@ void *command_conn(void *arg) {
     struct timeval tv;
 
     command_conn_set_status(1);
+	log_write("Command connection started on socket %i", *socket);
 	
 	if (send(*socket, CMD_READY, strlen(CMD_READY), 0) < 0)
-		log_write("Command connection error");
+		log_write("Connection error on command socket %i", *socket);
 #ifdef _DEBUG
     else
 		printf("--> %s\n", CMD_READY); fflush(stdout);
@@ -110,7 +111,7 @@ void *command_conn(void *arg) {
             break;
         }
         else if (result == 0){
-            log_write("Command connection timeout");
+            log_write("Connection timeout on command socket %i", *socket);
             break;
         }
 
@@ -129,7 +130,7 @@ void *command_conn(void *arg) {
 		if(result == 1)
 			break;
 		else if(result < 0) {
-			log_write("Connection error on command parser");
+			log_write("Connection error on command socket %i", *socket);
 			break;
 		}
 	}
@@ -138,6 +139,9 @@ void *command_conn(void *arg) {
 	data_conn_set_status(0);
 
 	close(*socket);
+	
+	log_write("Command connection closed on socket %i", *socket);
+	
 	return NULL;
 		
 }
@@ -146,11 +150,13 @@ void *command_conn_busy(void *arg) {
 	int *socket = arg;
 	
 	if (send(*socket, CMD_BUSY, strlen(CMD_BUSY), 0) < 0)
-		log_write("Command connection error");
+		log_write("Command connection error on socket %i", *socket);
+    else {
+        log_write("Command connection busy on socket %i", *socket);
 #ifdef _DEBUG
-    else
 		printf("--> %s\n", CMD_BUSY); fflush(stdout);
 #endif
+    }
 
 	close(*socket);
 	
@@ -180,26 +186,26 @@ void *command_conn_accept(void *arg) {
 	hints.ai_flags = AI_PASSIVE; // use my IP
 
 	if ((rv = getaddrinfo(NULL, PORT, &hints, &servinfo)) != 0) {
-		fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
+	    log_write("Command connection erro: %s", gai_strerror(rv));
 	}
 
 	// loop through all the results and bind to the first we can
 	for(p = servinfo; p != NULL; p = p->ai_next) {
 		if ((sockfd = socket(p->ai_family, p->ai_socktype,
 				p->ai_protocol)) == -1) {
-			perror("server: socket");
+			log_write("Error creating command connection socket");
 			continue;
 		}
 
 		if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes,
 				sizeof(int)) == -1) {
-			perror("setsockopt");
+			log_write("Error changing connection socket options");
 			exit(1);
 		}
 
 		if (bind(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
 			close(sockfd);
-			perror("server: bind");
+			log_write("Error binding command connection socket");
 			continue;
 		}
 
@@ -207,14 +213,14 @@ void *command_conn_accept(void *arg) {
 	}
 
 	if (p == NULL)  {
-		fprintf(stderr, "server: failed to bind\n");
+		log_write("Fatal error creating command connection socket");
 		return (void *)2;
 	}
 
 	freeaddrinfo(servinfo); // all done with this structure
 
 	if (listen(sockfd, BACKLOG) == -1) {
-		perror("listen");
+		log_write("Error listening command connection socket");
 		exit(1);
 	}
 
@@ -226,7 +232,7 @@ void *command_conn_accept(void *arg) {
 		exit(1);
 	}
 
-	printf("server: waiting for command connections...\n");
+    log_write("Accepting command connection");
 
     while(1) {  // main accept() loop
 		sin_size = sizeof their_addr;
@@ -239,8 +245,8 @@ void *command_conn_accept(void *arg) {
 		inet_ntop(their_addr.ss_family,
 			command_conn_get_in_addr((struct sockaddr *)&their_addr),
 			s, sizeof s);
-		printf("server: got command connection from %s\n", s);
-		
+			
+		log_write("New command connection from %s", s);	
         
 		if(command_conn_get_status() == 0) {
 			pthread_create(&command_conn_tpid, NULL, command_conn, &new_fd);

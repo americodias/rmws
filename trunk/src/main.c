@@ -76,10 +76,12 @@ int main(int argc, char *argv[]) {
         }
     }
     
+    log_write("Initializing server");
+    
     core51_destroy();
     
     if( core51_init(arglist.baudrate) < 0) {
-        perror("core51 initialization");
+        log_write("Fatal error: incorrect baudrate");
 		return EXIT_FAILURE;
 	}
 
@@ -90,6 +92,8 @@ int main(int argc, char *argv[]) {
     pthread_join(data_conn_accept_tpid,NULL);
     
     core51_destroy();
+    
+    log_write("Server exited");
     
     return EXIT_SUCCESS;
 }

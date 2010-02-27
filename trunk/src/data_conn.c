@@ -34,6 +34,7 @@
 #include "defs.h"
 #include "log.h"
 #include "parser.h"
+#include "core51.h"
 #include "command_conn.h"
 #include "data_conn.h"
 
@@ -67,16 +68,17 @@ void *data_conn(void *arg) {
 	int *socket = arg;
 	
 	data_conn_set_status(1);
+	log_write("Data connection started on socket %i", *socket);
 	
 	if (send(*socket, CMD_READY, strlen(CMD_READY), 0) < 0)
-		log_write("Data connection error");
+		log_write("Connection error on data socket %i", *socket);
 	
 	while(1) {
 	    if(data_conn_get_status() == 0)
 	        break;
 		if(uart_read() > 0) {
 		    if(write(*socket, get_uart_buffer(), strlen(get_uart_buffer())) < 0 ) {
-		        log_write("Data connection error");
+		        log_write("Connection error on data socket %i", *socket);
 				break;
 			}
 		}
@@ -86,6 +88,9 @@ void *data_conn(void *arg) {
 	data_conn_set_status(0);
     
 	close(*socket);
+	
+	log_write("Command connection closed on socket %i", *socket);
+	
 	return NULL;
 		
 }
@@ -94,7 +99,10 @@ void *data_conn_busy(void *arg) {
 	int *socket = arg;
 	
 	if (send(*socket, CMD_BUSY, strlen(CMD_BUSY), 0) < 0)
-		log_write("Command connection error");
+		log_write("Data connection error on socket %i", *socket);
+    else {
+        log_write("Data connection busy on socket %i", *socket);
+    }
 		
 	close(*socket);
 	
@@ -124,26 +132,26 @@ void *data_conn_accept(void *arg) {
 	hints.ai_flags = AI_PASSIVE; // use my IP
 
 	if ((rv = getaddrinfo(NULL, PORT, &hints, &servinfo)) != 0) {
-		fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
+		log_write("Data connection erro: %s", gai_strerror(rv));
 	}
 
 	// loop through all the results and bind to the first we can
 	for(p = servinfo; p != NULL; p = p->ai_next) {
 		if ((sockfd = socket(p->ai_family, p->ai_socktype,
 				p->ai_protocol)) == -1) {
-			perror("server: socket");
+			log_write("Error creating data connection socket");
 			continue;
 		}
 
 		if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes,
 				sizeof(int)) == -1) {
-			perror("setsockopt");
+			log_write("Error changing data socket options");
 			exit(1);
 		}
 
 		if (bind(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
 			close(sockfd);
-			perror("server: bind");
+			log_write("Error binding data connection socket");
 			continue;
 		}
 
@@ -151,7 +159,7 @@ void *data_conn_accept(void *arg) {
 	}
 
 	if (p == NULL)  {
-		fprintf(stderr, "server: failed to bind\n");
+		log_write("Fatal error creating data connection socket");
 		return (void *)2;
 	}
 
@@ -170,7 +178,7 @@ void *data_conn_accept(void *arg) {
 		exit(1);
 	}
 
-	printf("server: waiting for data connections...\n");
+	log_write("Accepting data connection");
 
     while(1) {  // main accept() loop
 		sin_size = sizeof their_addr;
@@ -183,7 +191,8 @@ void *data_conn_accept(void *arg) {
 		inet_ntop(their_addr.ss_family,
 			data_conn_get_in_addr((struct sockaddr *)&their_addr),
 			s, sizeof s);
-		printf("server: got data connection from %s\n", s);
+			
+		log_write("New data connection from %s", s);	
         
 		if(data_conn_get_status() == 0) {
 			pthread_create(&data_conn_tpid, NULL, data_conn, &new_fd);
