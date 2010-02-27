@@ -416,7 +416,7 @@ int main(int argc, char *argv[]) {
        
     opterr = 0;
     
-    while ((opt = getopt (argc, argv, "b:p:h")) != -1) {
+    while ((opt = getopt (argc, argv, "b:hp:v")) != -1) {
         switch (opt)
         {
         case 'b':
@@ -427,16 +427,25 @@ int main(int argc, char *argv[]) {
             break;
         case '?':
             if (optopt == 'b' || optopt == 'p')
-            fprintf (stderr, "Option -%c requires an argument.\n", optopt);
+                fprintf (stderr, "Option -%c requires an argument.\n", optopt);
             else if (isprint (optopt))
-            fprintf (stderr, "Unknown option `-%c'.\n", optopt);
+                fprintf (stderr, "Unknown option `-%c'.\n", optopt);
             else
-            fprintf (stderr,
-                    "Unknown option character `\\x%x'.\n",
-                    optopt);
+                fprintf (stderr, "Unknown option character `\\x%x'.\n", optopt);
             exit(EXIT_FAILURE);
         case 'h':
-            printf( "Usage: %s -b BAUDRATE -p PORT\n", argv[0]);
+            printf( "Usage: %s -b BAUDRATE -p PORT\n\n", argv[0]);
+            
+            printf( "  Options:\n");
+            printf( "    -b  : Serial port baudrate (%ld)\n", DEFAULT_BAUDRATE);
+            printf( "    -h  : Show this help\n");
+            printf( "    -p  : Connection port (%d)\n", DEFAULT_PORT);
+            printf( "    -v  : Show version information\n\n");
+            exit(EXIT_SUCCESS);
+        case 'v':
+            printf("\nRemote Microcontroller Workbench Server\n");
+            printf("(c) 2010 Américo Dias <americo.dias@fe.up.pt>\n\n");
+            printf("Version %s (Revision %d)\n\n", VERSION, _REV);
             exit(EXIT_SUCCESS);
         default:
             abort ();
