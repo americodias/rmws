@@ -19,3 +19,4 @@ core51: $(OBJ)
 .PHONY: clean
 clean:
 	$(RM) *.o *~ core51
+
