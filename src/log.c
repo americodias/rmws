@@ -39,7 +39,8 @@ void log_write(char *fmt, ... )
 
 	if(fp != NULL) {
         timestamp(fp);
-            
+        fprintf(fp, " ");
+        
         /* prepare list for va_arg */
         va_start( list, fmt );
  
@@ -51,7 +52,7 @@ void log_write(char *fmt, ... )
             {
                 /* not a string or integer print *
                 * the character to stdout */
-                putc( *p, stdout );
+                putc( *p, fp );
             } else {
                 /* character was % so check the *
                 * letter after it and see if it's *
@@ -87,6 +88,7 @@ void log_write(char *fmt, ... )
             }
         }
         va_end( list );
+        fprintf(fp, "\n");
         fflush( fp );
         fclose(fp);
     }
