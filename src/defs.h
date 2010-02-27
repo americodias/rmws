@@ -17,6 +17,12 @@
 #ifndef __DEFS_H
 #define __DEFS_H
 
+#define VERSION             "0.9.0"
+
+#ifndef _REV
+#define _REV                0
+#endif
+
 #ifdef _DEBUG
 #undef _DEBUG
 #define _DEBUG              1       // Change to 0 to disable debug messages
