@@ -33,7 +33,8 @@
 #define CMD_CLEAR_KEY       "CKEY"
 #define CMD_CLEAR_RESET     "CRST"
 #define CMD_CLEAR_INTERRUPT "CINT"
-
+#define CMD_READY           "REDY"
+#define CMD_BUSY            "BUSY"
 
 int command_parser(char *string, int *socket);
 
