@@ -1,3 +1,19 @@
+/*   This file is prepared for Doxygen automatic documentation generation     */
+/*! \file **********************************************************************
+ *
+ * \brief
+ *      Core51 functions definitions
+ * 
+ * \author
+ *      Américo Dias <americo.dias@fe.up.pt>
+ *
+ * $Revision$
+ * $HeadURL$
+ * $Date$
+ * $Author$
+ * $Id$
+ *
+ ******************************************************************************/
 #ifndef __CORE51_H
 #define __CORE41_H
 

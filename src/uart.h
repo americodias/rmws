@@ -1,9 +1,18 @@
-/*
- * This is just a interface to open a usart.
+/*! \file **********************************************************************
  *
- * (C) 2008 by Benjamin Tietz <benjamin.tietz@in-circuit.de>
- */
-
+ * \brief
+ *      Command parser
+ * 
+ * \author
+ *      Américo Dias <americo.dias@fe.up.pt>
+ *
+ * $Revision$
+ * $HeadURL$
+ * $Date$
+ * $Author$
+ * $Id$
+ *
+ ******************************************************************************/
 #ifndef __UART_H
 #define __UART_H
 

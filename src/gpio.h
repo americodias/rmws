@@ -1,10 +1,19 @@
-/*
- * Just an interface to easy open a GPIO-Port
+/*   This file is prepared for Doxygen automatic documentation generation     */
+/*! \file **********************************************************************
  *
- * After opening standard I/O-Calls can be used.
+ * \brief
+ *      Command parser
+ * 
+ * \author
+ *      Américo Dias <americo.dias@fe.up.pt>
  *
- * (C) 2008 by Benjamin Tietz <benjamin.tietz@in-circuit.de>
- */
+ * $Revision$
+ * $HeadURL$
+ * $Date$
+ * $Author$
+ * $Id$
+ *
+ ******************************************************************************/
 #ifndef __GPIO_H
 #define __GPIO_H
 

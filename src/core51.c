@@ -1,3 +1,19 @@
+/*   This file is prepared for Doxygen automatic documentation generation     */
+/*! \file **********************************************************************
+ *
+ * \brief
+ *      Core51 functions
+ * 
+ * \author
+ *      Américo Dias <americo.dias@fe.up.pt>
+ *
+ * $Revision$
+ * $HeadURL$
+ * $Date$
+ * $Author$
+ * $Id$
+ *
+ ******************************************************************************/
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>

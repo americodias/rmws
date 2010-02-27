@@ -1,9 +1,18 @@
-/*
- * This opens a serial line. Afterwards the default I/O Operations can be used.
+/*! \file **********************************************************************
  *
- * (C) 2008 by Benjamin Tietz <benjamin.tietz@in-circuit.de>
- */
-
+ * \brief
+ *      Command parser
+ * 
+ * \author
+ *      Américo Dias <americo.dias@fe.up.pt>
+ *
+ * $Revision$
+ * $HeadURL$
+ * $Date$
+ * $Author$
+ * $Id$
+ *
+ ******************************************************************************/
 #include "uart.h"
 #include <termios.h>
 #include <unistd.h>

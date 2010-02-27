@@ -4,9 +4,16 @@
  * \brief
  *      Command parser definitions
  * 
- * $Id: parser.h 4 2010-01-10 22:10:13Z adias $
+ * \author
+ *      Américo Dias <americo.dias@fe.up.pt>
  *
- ****************************************************************************/
+ * $Revision$
+ * $HeadURL$
+ * $Date$
+ * $Author$
+ * $Id$
+ *
+ ******************************************************************************/
 #ifndef __PARSER_H
 #define __PARSER_H
 
@@ -27,10 +34,7 @@
 #define CMD_CLEAR_RESET     "CRST"
 #define CMD_CLEAR_INTERRUPT "CINT"
 
-#define TEXT_BUF_LEN	1024
-#define FILE_NAME_LEN	512
 
-#define FILE_NAME		"core51.hex"
 int command_parser(char *string, int *socket);
 
 
