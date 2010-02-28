@@ -17,6 +17,8 @@
 #ifndef __DEFS_H
 #define __DEFS_H
 
+#include "connection.h"
+
 #define VERSION             "0.9.0"
 
 #ifndef _REV
@@ -42,11 +44,7 @@
 #define HEX_FILE_NAME       "/tmp/core51.hex"       // Core51 HEX file
 #define LOG_FILE_NAME       "/var/log/core51.log"   // Log file
 
-struct args {
-    unsigned long int baudrate;
-	int port;
-	int socket_fd;
-	int slave;
-};
+
+
 #endif //__DEFS_H
 

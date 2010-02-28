@@ -19,24 +19,20 @@
 #include <ctype.h>
 #include <unistd.h>
 #include <errno.h>
+#include <pthread.h>
 #include "defs.h"
 #include "log.h"
 #include "core51.h"
-#include "command_conn.h"
-#include "data_conn.h"
+#include "connection.h"
 
 
 int main(int argc, char *argv[]) {
-    int opt;
     pthread_t command_conn_accept_tpid, data_conn_accept_tpid;
-    struct args arglist;
+	unsigned long int baudrate;
+	int port, opt;
     
-    command_conn_init();
-    data_conn_init();
-    log_init();
-    
-    arglist.baudrate = DEFAULT_BAUDRATE;
-    arglist.port = DEFAULT_PORT;
+    baudrate = DEFAULT_BAUDRATE;
+    port = DEFAULT_PORT;
        
     opterr = 0;
     
@@ -44,10 +40,10 @@ int main(int argc, char *argv[]) {
         switch (opt)
         {
         case 'b':
-            arglist.baudrate = strtoul(optarg, NULL, 0);
+            baudrate = strtoul(optarg, NULL, 0);
             break;
         case 'p':
-            arglist.port = atoi(optarg);
+            port = atoi(optarg);
             break;
         case '?':
             if (optopt == 'b' || optopt == 'p')
@@ -76,17 +72,18 @@ int main(int argc, char *argv[]) {
         }
     }
     
+	log_init();
     log_write("Initializing server");
-    
+    connection_init(port);
     core51_destroy();
     
-    if( core51_init(arglist.baudrate) < 0) {
-        log_write("Fatal error: incorrect baudrate");
+    if( core51_init(baudrate) < 0) {
+        log_write("Fatal error: hardware initialization");
 		return EXIT_FAILURE;
 	}
 
-    pthread_create(&command_conn_accept_tpid, NULL, command_conn_accept, &arglist);
-    pthread_create(&data_conn_accept_tpid, NULL, data_conn_accept, &arglist);
+    pthread_create(&command_conn_accept_tpid, NULL, connection_accept, (int *)(_COMMAND));
+    pthread_create(&data_conn_accept_tpid, NULL, connection_accept, (int *)(_DATA));
     
     pthread_join(command_conn_accept_tpid,NULL);
     pthread_join(data_conn_accept_tpid,NULL);
