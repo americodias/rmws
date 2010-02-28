@@ -14,6 +14,7 @@
  * $Id$
  *
  ******************************************************************************/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
@@ -35,21 +36,20 @@
 #include "log.h"
 #include "parser.h"
 #include "core51.h"
-#include "command_conn.h"
-#include "data_conn.h"
+#include "connection.h"
 
-int                 command_connection;
+int                 connection_status[2];
+pthread_mutex_t     connection_mutex[2];
+unsigned int		port[2];
 
-pthread_mutex_t     command_connection_mutex;
-
-void command_conn_sigchld_handler(int s)
+void connection_sigchld_handler(int s)
 {
 	while(waitpid(-1, NULL, WNOHANG) > 0);
 	fflush(stdout);
 }
 
 // get sockaddr, IPv4 or IPv6:
-void *command_conn_get_in_addr(struct sockaddr *sa)
+void *connection_get_in_addr(struct sockaddr *sa)
 {
 	if (sa->sa_family == AF_INET) {
 		return &(((struct sockaddr_in*)sa)->sin_addr);
@@ -58,7 +58,7 @@ void *command_conn_get_in_addr(struct sockaddr *sa)
 	return &(((struct sockaddr_in6*)sa)->sin6_addr);
 }
 
-void strtoupper(char *str) 
+void connection_strtoupper(char *str) 
 {
 	while(*str) {
 		if(*str != '\n' && *str != '\r')
@@ -71,85 +71,125 @@ void strtoupper(char *str)
 	return;
 }
 
-void command_conn_init(void) {
-    command_connection = 0;
-    pthread_mutex_init(&command_connection_mutex, NULL);
+void connection_set_status(connection_t type, int status)
+{
+    pthread_mutex_lock(&connection_mutex[type]);
+    connection_status[type] = status;
+    pthread_mutex_unlock(&connection_mutex[type]);
+}
+
+int connection_get_status(connection_t type)
+{
+    int result;
+    
+    pthread_mutex_lock(&connection_mutex[type]);
+    result = connection_status[type];
+    pthread_mutex_unlock(&connection_mutex[type]);
+    
+    return result;
+}
+
+void connection_init(int p) {
+	port[_COMMAND] = p;
+	port[_DATA] = p + 1;
+    pthread_mutex_init(&connection_mutex[_COMMAND], NULL);
+	pthread_mutex_init(&connection_mutex[_DATA], NULL);
+	connection_set_status(_COMMAND, _READY);
+	connection_set_status(_DATA, _READY);
     return;
 }
 
-void *command_conn(void *arg) {
-	int *socket = arg;
+void *connection_handler(void *arg) {
+	connection *conn = arg;
 	int result;
 	char socket_buffer[SOCKET_BUFFER_SIZE];
 
     fd_set rfds;
     struct timeval tv;
 
-    command_conn_set_status(1);
+    connection_set_status(conn->type, _BUSY);
 	log_write("Command connection started on socket %i", *socket);
 	
-	if (send(*socket, CMD_READY, strlen(CMD_READY), 0) < 0)
-		log_write("Connection error on command socket %i", *socket);
+	if (send(conn->socket, CMD_READY, strlen(CMD_READY), 0) < 0)
+		log_write("Connection error on command socket %i", conn->socket);
 #ifdef _DEBUG
     else
 		printf("--> %s\n", CMD_READY); fflush(stdout);
 #endif
     
-	while(1) {
-		bzero(socket_buffer, SOCKET_BUFFER_SIZE);
+	if(conn->type == COMMAND) {
+		while(1) {
+			bzero(socket_buffer, SOCKET_BUFFER_SIZE);
 
-        FD_ZERO(&rfds);
-        FD_SET(*socket, &rfds);
+	        FD_ZERO(&rfds);
+	        FD_SET(conn->socket, &rfds);
 
-        tv.tv_sec = 30;
-        tv.tv_usec = 0;
+	        tv.tv_sec = 30;
+	        tv.tv_usec = 0;
     
-	    result = select((int)(*socket+1), &rfds, NULL, NULL, &tv);
+		    result = select((int)(conn->socket+1), &rfds, NULL, NULL, &tv);
 
-        if (result < 0) {
-            perror("select");
-            break;
-        }
-        else if (result == 0){
-            log_write("Connection timeout on command socket %i", *socket);
-            break;
-        }
+	        if (result < 0) {
+	            perror("select");
+	            break;
+	        }
+	        else if (result == 0){
+	            log_write("Connection timeout on command socket %i", *socket);
+	            break;
+	        }
 
-	    result = read(*socket, socket_buffer, SOCKET_BUFFER_SIZE);
-		if(result < 0) {
-		    log_write("Command connection error");
-			break;
+		    result = read(conn->socket, socket_buffer, SOCKET_BUFFER_SIZE);
+			if(result < 0) {
+			    log_write("Command connection error");
+				break;
+			}
+		
+			connection_strtoupper(socket_buffer);
+	#ifdef _DEBUG		
+			printf("<-- %s\n", socket_buffer); fflush(stdout);
+	#endif
+			result = command_parser(socket_buffer, &conn->socket);
+		
+			if(result == 1)
+				break;
+			else if(result < 0) {
+				log_write("Connection error on command socket %i", conn->socket);
+				break;
+			}
 		}
-		
-		strtoupper(socket_buffer);
-#ifdef _DEBUG		
-		printf("<-- %s\n", socket_buffer); fflush(stdout);
-#endif
-		result = command_parser(socket_buffer, socket);
-		
-		if(result == 1)
-			break;
-		else if(result < 0) {
-			log_write("Connection error on command socket %i", *socket);
-			break;
+	}
+	else if (conn->type == DATA) {
+		while(1) {
+		    if(connection_get_status(_DATA) == _READY)
+		        break;
+			if(uart_read() > 0) {
+			    if(write(conn->socket, get_uart_buffer(), strlen(get_uart_buffer())) < 0 ) {
+			        log_write("Connection error on data socket %i", conn->socket);
+					break;
+				}
+			}
+			usleep(SERIAL_PORT_DELAY);
 		}
 	}
 	
-	command_conn_set_status(0);
-	data_conn_set_status(0);
+	connection_set_status(_COMMAND, _READY);
+	connection_set_status(_DATA, _READY);
 
-	close(*socket);
+	close(conn->socket);
 	
-	log_write("Command connection closed on socket %i", *socket);
+	
+	log_write("Command connection closed on socket %i", conn->socket);
+	free(conn);
 	
 	return NULL;
 		
 }
 
-void *command_conn_busy(void *arg) {
-	int *socket = arg;
+
+void *connection_busy(void *arg) {
+	connection *conn = arg;
 	
-	if (send(*socket, CMD_BUSY, strlen(CMD_BUSY), 0) < 0)
+	if (send(conn->socket, CMD_BUSY, strlen(CMD_BUSY), 0) < 0)
 		log_write("Command connection error on socket %i", *socket);
     else {
         log_write("Command connection busy on socket %i", *socket);
@@ -158,15 +198,17 @@ void *command_conn_busy(void *arg) {
 #endif
     }
 
-	close(*socket);
+	close(conn->socket);
+	
+	free(conn);
 	
 	return NULL;
 		
 }
 
-void *command_conn_accept(void *arg) {
-	pthread_t command_conn_tpid;
-    struct args *arglist = arg;
+void *connection_accept(void *arg) {
+    connection_t *type = arg;
+	
     char PORT[10];
 	
 	int sockfd, new_fd;  // listen on sock_fd, new connection on new_fd
@@ -177,8 +219,10 @@ void *command_conn_accept(void *arg) {
 	int yes=1;
 	char s[INET6_ADDRSTRLEN];
 	int rv;
+	connection *conn;
 
-    sprintf(PORT, "%d", arglist->port);
+    sprintf(PORT, "%d", port[*type]);
+
     
 	memset(&hints, 0, sizeof hints);
 	hints.ai_family = AF_UNSPEC;
@@ -224,7 +268,7 @@ void *command_conn_accept(void *arg) {
 		exit(1);
 	}
 
-	sa.sa_handler = command_conn_sigchld_handler; // reap all dead processes
+	sa.sa_handler = connection_sigchld_handler; // reap all dead processes
 	sigemptyset(&sa.sa_mask);
 	sa.sa_flags = SA_RESTART;
 	if (sigaction(SIGCHLD, &sa, NULL) == -1) {
@@ -242,37 +286,27 @@ void *command_conn_accept(void *arg) {
 			continue;
 		}
 
+		conn = calloc(1, sizeof(connection));
+		conn->type = *type;
+		conn->socket = new_fd;
+		
 		inet_ntop(their_addr.ss_family,
-			command_conn_get_in_addr((struct sockaddr *)&their_addr),
+			connection_get_in_addr((struct sockaddr *)&their_addr),
 			s, sizeof s);
-			
-		log_write("New command connection from %s", s);	
-        
-		if(command_conn_get_status() == 0) {
-			pthread_create(&command_conn_tpid, NULL, command_conn, &new_fd);
+		
+		conn->client = calloc(strlen(s), sizeof(char));
+		memcpy(conn->client, s, strlen(s));
+		
+		log_write("New command connection from %s", s);			
+		
+		if(connection_get_status(*type) == 0) {
+			pthread_create(&conn->tpid, NULL, connection_handler, conn);
 		}
 		else
-			pthread_create(&command_conn_tpid, NULL, command_conn_busy, &new_fd);
+			pthread_create(&conn->tpid, NULL, connection_busy, conn);
 	}
 	
     return NULL;
 }
 
-void command_conn_set_status(int status)
-{
-    pthread_mutex_lock(&command_connection_mutex);
-    command_connection = status;
-    pthread_mutex_unlock(&command_connection_mutex);
-}
-
-int command_conn_get_status(void)
-{
-    int result;
-    
-    pthread_mutex_lock(&command_connection_mutex);
-    result = command_connection;
-    pthread_mutex_unlock(&command_connection_mutex);
-    
-    return result;
-}
 
