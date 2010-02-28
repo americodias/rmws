@@ -7,9 +7,7 @@
  *      Américo Dias <americo.dias@fe.up.pt>
  *
  * $Revision$
- * $HeadURL$
  * $Date$
- * $Author$
  * $Id$
  *
  ******************************************************************************/

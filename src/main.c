@@ -8,9 +8,7 @@
  *      Américo Dias <americo.dias@fe.up.pt>
  *
  * $Revision$
- * $HeadURL$
  * $Date$
- * $Author$
  * $Id$
  *
  ******************************************************************************/
@@ -25,6 +23,14 @@
 #include "core51.h"
 #include "connection.h"
 
+/*! \brief Main function
+ *
+ *  \author teste!!
+ *  \param argc xxx
+ *  \param argv yyy
+ *  \return Exit code
+ *
+ */
 
 int main(int argc, char *argv[]) {
     pthread_t command_conn_accept_tpid, data_conn_accept_tpid;

@@ -8,9 +8,7 @@
  *      Américo Dias <americo.dias@fe.up.pt>
  *
  * $Revision$
- * $HeadURL$
  * $Date$
- * $Author$
  * $Id$
  *
  ******************************************************************************/
@@ -37,6 +35,7 @@
 #include "parser.h"
 #include "core51.h"
 #include "connection.h"
+
 
 int                 connection_status[2];
 pthread_mutex_t     connection_mutex[2];
@@ -163,8 +162,10 @@ void *connection_handler(void *arg) {
 		    if(connection_get_status(_DATA) == _READY)
 		        break;
 			if(uart_read() > 0) {
-			    if(write(conn->socket, get_uart_buffer(), strlen(get_uart_buffer())) < 0 ) {
-			        log_write("Connection error on data socket %i", conn->socket);
+			    if(write(conn->socket, get_uart_buffer(), 
+						strlen(get_uart_buffer())) < 0 ) {
+			        log_write("Connection error on data socket %i", 
+						conn->socket);
 					break;
 				}
 			}
@@ -184,7 +185,6 @@ void *connection_handler(void *arg) {
 	return NULL;
 		
 }
-
 
 void *connection_busy(void *arg) {
 	connection *conn = arg;
