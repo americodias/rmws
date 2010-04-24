@@ -8,7 +8,9 @@
  *      Américo Dias <americo.dias@fe.up.pt>
  *
  * $Revision$
+ * $HeadURL$
  * $Date$
+ * $Author$
  * $Id$
  *
  ******************************************************************************/
@@ -89,6 +91,7 @@ int core51_init(unsigned long int baudrate) {
     gpio = init_gpio(gpio_label,'D',output_enable,O_WRONLY);
     
     if(gpio < 0) {
+        printf("GPIO!\n");
 		return gpio;
 	}
 	

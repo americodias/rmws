@@ -2,7 +2,7 @@
 /*! \file **********************************************************************
  *
  * \brief
- *      Timestamp functions definitions
+ *      Data connection functions definitions
  * 
  * \author
  *      Américo Dias <americo.dias@fe.up.pt>
@@ -14,13 +14,15 @@
  * $Id$
  *
  ******************************************************************************/
-#ifndef __TIMESTAMP_H
-#define __TIMESTAMP_H
+#ifndef __DATA_CONN_H
+#define __DATA_CONN_H
 
-#define TIME_SIZE 40
+void data_conn_init(void);
+void *data_conn(void *arg);
+void *data_conn_busy(void *arg);
+void *data_conn_accept(void *arg);
+void data_conn_set_status(int status);
+int data_conn_get_status(void);
 
-double cpu_time(void);
-void timestamp(FILE *fd);
-char *timestring(void);
+#endif //__DATA_CONN_H
 
-#endif //__TIMESTAMP_H

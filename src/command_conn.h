@@ -2,7 +2,7 @@
 /*! \file **********************************************************************
  *
  * \brief
- *      Timestamp functions definitions
+ *      Command connection functions definitions
  * 
  * \author
  *      Américo Dias <americo.dias@fe.up.pt>
@@ -14,13 +14,13 @@
  * $Id$
  *
  ******************************************************************************/
-#ifndef __TIMESTAMP_H
-#define __TIMESTAMP_H
+#ifndef __COMMAND_CONN_H
+#define __COMMAND_CONN_H
 
-#define TIME_SIZE 40
-
-double cpu_time(void);
-void timestamp(FILE *fd);
-char *timestring(void);
-
-#endif //__TIMESTAMP_H
+void command_conn_init(void);
+void *command_conn(void *arg);
+void *command_conn_busy(void *arg);
+void *command_conn_accept(void *arg);
+void command_conn_set_status(int status);
+int command_conn_get_status(void);
+#endif
