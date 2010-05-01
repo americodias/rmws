@@ -19,6 +19,7 @@
 #include <ctype.h>
 #include <unistd.h>
 #include <errno.h>
+#include <pthread.h>
 #include "defs.h"
 #include "log.h"
 #include "core51.h"
