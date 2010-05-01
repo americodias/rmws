@@ -36,6 +36,7 @@
 #include "parser.h"
 #include "command_conn.h"
 #include "data_conn.h"
+#include "core51.h"
 
 int                 data_connection;
 pthread_mutex_t     data_connection_mutex;
